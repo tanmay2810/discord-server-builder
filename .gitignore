@@ -1,0 +1,51 @@
+# Environment and secrets
+.env
+.env.*
+*.env
+.env.example
+
+# Local runtime configuration and personal data
+server_config.json
+config.local.json
+*.local.json
+
+# Private media / user assets
+PFP/
+PFP/*
+**/PFP/
+
+# Bot / personal generated files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.sqlite
+*.db
+*.bak
+*.zip
+
+# Python cache and virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local notes / private scratch files
+notes/
+private/
+secrets/
