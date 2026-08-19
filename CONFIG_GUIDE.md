@@ -5,8 +5,9 @@ This guide explains how to customize your server using `server_config.json`.
 ## Quick Start
 1. Copy `server_config.example.json` to `server_config.json`
 2. Edit `server_config.json` with your preferred roles, channels, categories
-3. Run `/setup` in Discord
-4. Bot creates everything based on your configuration
+3. Add your Guild ID to the `servers` section with `"builder_enabled": true`
+4. Run `/setup` in Discord
+5. Bot creates everything based on your configuration in the **current guild only**
 
 ## File Location
 ```
@@ -22,20 +23,45 @@ discord-server-builder/
 ## Configuration Sections
 
 ### 1. Bot Settings
+
 ```json
 {
   "bot": {
-    "token_env_var": "DISCORD_TOKEN",      // Env variable name (don't change)
-    "guild_name": "My Server",             // Your server display name
-    "server_description": "Auto setup bot" // Server description
+    "token_env_var": "DISCORD_TOKEN",
+    "guild_name": "My Server",
+    "server_description": "Auto setup bot"
   }
 }
 ```
 
-### 2. Roles
+- `token_env_var` — Environment variable name for the bot token (don't change)
+- `guild_name` — Your server display name
+- `server_description` — Server description
+
+### 2. Per-Server Configuration
+
+The `servers` section controls which guilds are allowed to use `/setup`, `/reset`, and `/setup-emojis`.
+
+```json
+{
+  "servers": {
+    "123456789012345678": {
+      "builder_enabled": true
+    }
+  }
+}
+```
+
+- Replace `123456789012345678` with the actual Guild ID (right-click server → Copy Server ID).
+- **Unknown guilds default to `builder_enabled = false`** — the bot will never modify them.
+- `/setup` in a disabled guild returns an ephemeral rejection and makes **no changes**.
+
+### 3. Roles
+
 Define your server roles with emojis and hierarchy.
 
 #### Staff Roles (Top Priority)
+
 ```json
 {
   "roles": {
@@ -50,42 +76,58 @@ Define your server roles with emojis and hierarchy.
 ```
 
 #### Member Levels (Progression)
+
 ```json
 {
+  "roles": {
     "levels": [
-      "🌌 Level III",  // Highest - full permissions
-      "🌙 Level II",   // Mid - some restrictions
-      "✨ Level I",    // Low - limited permissions
-      "🌸 Member"      // Lowest - auto-assigned on join
+      "🌌 Level III",
+      "🌙 Level II",
+      "✨ Level I",
+      "🌸 Member"
     ]
   }
 }
 ```
 
-#### Bot Role (For Your Bot)
-```json
-{
-  "bot_role": "🤖 Bots"  // Role for all bots
-}
-```
+- `🌌 Level III` — Highest, full permissions
+- `🌙 Level II` — Mid, some restrictions
+- `✨ Level I` — Low, limited permissions
+- `🌸 Member` — Lowest, auto-assigned on join
 
-#### Onboarding Roles (Self-Assign)
-Members pick one from each category:
+#### Bot Role (For Your Bot)
+
 ```json
 {
-  "onboarding": {
-    "gender": ["♂️ Male", "♀️ Female", "⚪ Prefer not to say"],
-    "age": ["🌱 13-16", "🌿 16-18", "🌸 18-20", "🌙 21-23"],
-    "interests": ["🎮 Gamer", "🌸 Anime", "🎵 Music", "🎥 Movies"],
-    "platforms": ["🖥️ PC", "🎮 PlayStation", "🕹️ Xbox"],
-    "colors": ["❤️ Red", "💙 Blue", "💜 Purple"],
-    "notifications": ["📢 Announcements", "🎙️ VC Pings"]
+  "roles": {
+    "bot_role": "🤖 Bots"
   }
 }
 ```
 
-### 3. Categories
-Channel groups - appears as folders in Discord:
+#### Onboarding Roles (Self-Assign)
+
+Members pick one from each category:
+
+```json
+{
+  "roles": {
+    "onboarding": {
+      "gender": ["♂️ Male", "♀️ Female", "⚪ Prefer not to say"],
+      "age": ["🌱 13-16", "🌿 16-18", "🌸 18-20", "🌙 21-23"],
+      "interests": ["🎮 Gamer", "🌸 Anime", "🎵 Music", "🎥 Movies"],
+      "platforms": ["🖥️ PC", "🎮 PlayStation", "🕹️ Xbox"],
+      "colors": ["❤️ Red", "💙 Blue", "💜 Purple"],
+      "notifications": ["📢 Announcements", "🎙️ VC Pings"]
+    }
+  }
+}
+```
+
+### 4. Categories
+
+Channel groups — appears as folders in Discord:
+
 ```json
 {
   "categories": [
@@ -101,10 +143,12 @@ Channel groups - appears as folders in Discord:
 }
 ```
 
-### 4. Channels
+### 5. Channels
+
 Organized by category and type.
 
 #### Text Channels
+
 ```json
 {
   "channels": {
@@ -118,6 +162,7 @@ Organized by category and type.
 ```
 
 #### Voice Channels
+
 ```json
 {
   "channels": {
@@ -129,8 +174,10 @@ Organized by category and type.
 }
 ```
 
-### 5. Voice Limits
+### 6. Voice Limits
+
 Max users per voice channel (0 = unlimited):
+
 ```json
 {
   "voice_limits": {
@@ -142,22 +189,28 @@ Max users per voice channel (0 = unlimited):
 }
 ```
 
-### 6. Security Settings
+### 7. Security Settings
+
 ```json
 {
   "security": {
-    "block_private_threads_for_members": true,    // Prevent member-only threads
-    "allow_external_emojis_for_members": true,   // Allow external emoji use
-    "allow_external_stickers_for_members": true  // Allow external stickers
+    "block_private_threads_for_members": true,
+    "allow_external_emojis_for_members": true,
+    "allow_external_stickers_for_members": true
   }
 }
 ```
+
+- `block_private_threads_for_members` — Prevent member-only threads
+- `allow_external_emojis_for_members` — Allow external emoji use
+- `allow_external_stickers_for_members` — Allow external stickers
 
 ---
 
 ## Customization Examples
 
 ### Example 1: Small Gaming Server
+
 ```json
 {
   "roles": {
@@ -186,6 +239,7 @@ Max users per voice channel (0 = unlimited):
 ```
 
 ### Example 2: Study/Education Server
+
 ```json
 {
   "roles": {
@@ -206,6 +260,7 @@ Max users per voice channel (0 = unlimited):
 ```
 
 ### Example 3: Community Server
+
 ```json
 {
   "roles": {
@@ -232,6 +287,7 @@ Max users per voice channel (0 = unlimited):
 ## Permission System
 
 ### Automatic Permission Rules
+
 The bot applies these permissions automatically:
 
 - **Staff roles**: Full access to all channels (except some member-only)
@@ -245,63 +301,125 @@ The bot applies these permissions automatically:
 
 See `permissions.py` for the complete permission rules.
 
+### Link Permissions Note
+
+Discord's `Embed Links` permission controls whether users see **rich link previews/embeds**. It is **NOT** a general "block URLs" permission.
+
+- Setting `embed_links = False` prevents link previews from appearing.
+- It does **NOT** prevent users from sending URLs in messages.
+- If you need to block or filter URLs entirely, use Discord's **AutoMod** or an external moderation bot (Dyno, Wick, Sapphire, etc.).
+
 ---
 
 ## Common Tasks
 
 ### Add a New Role
+
 1. Open `server_config.json`
-2. Add to appropriate section:
-   ```json
-   "staff": ["👑 Founder", "⚜️ Owner", "🛡️ Admin", "🆕 Supporter"]
-   ```
+2. Add to the appropriate section:
+
+```json
+{
+  "roles": {
+    "staff": ["👑 Founder", "⚜️ Owner", "🛡️ Admin", "🆕 Supporter"]
+  }
+}
+```
+
 3. Save and run `/setup`
 
 ### Add a New Channel
+
 1. Open `server_config.json`
 2. Find the category and add the channel:
-   ```json
-   "💬 community": ["💬・general", "🆕 new-channel", "🌸・introductions"]
-   ```
+
+```json
+{
+  "channels": {
+    "text": {
+      "💬 community": ["💬・general-chat", "🆕・new-channel", "🌸・introductions"]
+    }
+  }
+}
+```
+
 3. Save and run `/setup`
 
 ### Add a New Category
+
 1. Open `server_config.json`
-2. Add to categories array:
-   ```json
-   "categories": [
-     "📋 logs",
-     "🆕 projects",  // NEW
-     "💬 community"
-   ]
-   ```
+2. Add to the categories array:
+
+```json
+{
+  "categories": [
+    "📋 logs",
+    "🆕 projects",
+    "💬 community"
+  ]
+}
+```
+
 3. Add channels for it:
-   ```json
-   "channels": {
-     "text": {
-       "🆕 projects": ["📋・project-1", "📋・project-2"]
-     }
-   }
-   ```
+
+```json
+{
+  "channels": {
+    "text": {
+      "🆕 projects": ["📋・project-1", "📋・project-2"]
+    }
+  }
+}
+```
 
 ### Change Role Names/Emojis
+
 1. Edit `server_config.json`
 2. Change the role name:
-   ```json
-   "staff": ["👑 Supreme Leader", "⚜️ Executive"]  // Changed from Owner
-   ```
+
+```json
+{
+  "roles": {
+    "staff": ["👑 Supreme Leader", "⚜️ Executive"]
+  }
+}
+```
+
 3. Run `/reset` then `/setup` to rebuild with new names
 
 ### Set Voice Channel Limits
+
 ```json
 {
   "voice_limits": {
     "🎮・ranked-5v5": 10,
     "🎙️・streaming": 1,
-    "☕・hangout": 0  // unlimited
+    "☕・hangout": 0
   }
 }
 ```
+
+(0 = unlimited)
+
+---
+
+## Safe Reset Ownership
+
+`/reset` uses an **ownership registry** stored per guild at `data/registries/<guild_id>.json`.
+
+- When `/setup` creates a new role, category, or channel, its Discord ID is recorded in the registry.
+- `/reset` deletes **only** resources whose IDs are in the registry.
+- **If ownership cannot be proven, the resource is NOT deleted.**
+
+`/reset` will **never** delete:
+
+- `@everyone`
+- Third-party bot roles (Dyno, Wick, Arcane, Sapphire, TicketsBot, etc.)
+- Manually created roles
+- Manually created channels/categories
+- Any resource not recorded in the registry
+
+If the registry is missing, empty, or corrupted, `/reset` deletes **nothing**.
 
 ---
 
@@ -320,9 +438,14 @@ See `permissions.py` for the complete permission rules.
 ## Troubleshooting
 
 **Bot didn't create channels I added**
-- Verify JSON syntax is valid (no trailing commas)
+- Verify JSON syntax is valid (no trailing commas, no comments inside JSON)
 - Check channel isn't already created
 - Run `/reset` then `/setup`
+
+**/setup says "builder is not enabled"**
+- Open `server_config.json`
+- Add your Guild ID to the `servers` section with `"builder_enabled": true`
+- Restart the bot
 
 **Roles aren't applying correctly**
 - Make sure roles are higher in the staff list for higher priority
@@ -338,6 +461,11 @@ See `permissions.py` for the complete permission rules.
 - Some permissions are automatic (see `permissions.py`)
 - Run `/reset` then `/setup` to reapply
 - Check member's highest role in hierarchy
+
+**/reset deleted nothing**
+- This is expected if the registry is empty or missing
+- Run `/setup` first to create and register resources
+- Only Eldian-created resources are eligible for deletion
 
 ---
 
