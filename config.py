@@ -16,3 +16,26 @@ def load_server_config(path: str | Path | None = None) -> Dict[str, Any]:
 
     with config_path.open("r", encoding="utf-8") as config_file:
         return json.load(config_file)
+
+
+def is_builder_enabled(guild_id: int) -> bool:
+    """Check if the server builder is explicitly enabled for a guild.
+
+    Unknown guilds default to builder_enabled = False.
+    """
+    config = load_server_config()
+    servers = config.get("servers", {})
+    guild_config = servers.get(str(guild_id))
+    if guild_config is None:
+        return False
+    return bool(guild_config.get("builder_enabled", False))
+
+
+def get_guild_config(guild_id: int) -> Dict[str, Any]:
+    """Get the per-guild configuration for a specific guild ID.
+
+    Returns an empty dict for unknown guilds.
+    """
+    config = load_server_config()
+    servers = config.get("servers", {})
+    return servers.get(str(guild_id), {})

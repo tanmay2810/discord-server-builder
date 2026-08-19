@@ -11,5 +11,9 @@ class AdminLogger:
         if log_channel is None:
             return
 
-        message = f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC] {action}: {details}"
+        message = (
+            f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC] "
+            f"{action}: {details} "
+            f"(Guild: {guild.name} ID: {guild.id})"
+        )
         await log_channel.send(message)

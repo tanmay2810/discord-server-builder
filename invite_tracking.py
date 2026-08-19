@@ -4,6 +4,11 @@ from db import append_join_log, load_invite_data, save_invite_data
 
 
 async def track_invites(guild: discord.Guild):
+    """Save the current invite state for a specific guild.
+
+    This is NOT called automatically on startup. It is available for
+    explicit per-guild initialization if needed.
+    """
     invites = await guild.invites()
     data = {str(invite.code): invite.uses for invite in invites}
     save_invite_data(data)

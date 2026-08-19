@@ -3,12 +3,8 @@ Emoji Manager — Upload custom emojis from the emojies/ folder to Discord
 Automatically categorizes emojis and uploads them to the server on setup
 """
 
-import os
 import discord
 from pathlib import Path
-from config import load_server_config
-
-CONFIG = load_server_config(None)
 
 
 async def upload_server_emojis(guild: discord.Guild) -> dict:
@@ -27,9 +23,8 @@ async def upload_server_emojis(guild: discord.Guild) -> dict:
     
     results = {"uploaded": 0, "failed": 0, "errors": []}
     
-    # Get all emoji files
-    emoji_files = list(emojies_path.glob("*")) + list(emojies_path.glob("**/*"))
-    emoji_files = [f for f in emoji_files if f.is_file() and f.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif"]]
+    # Get all emoji files (recursively, without duplicates)
+    emoji_files = [f for f in emojies_path.rglob("*") if f.is_file() and f.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif"]]
     
     print(f"📁 Found {len(emoji_files)} emoji files")
     
