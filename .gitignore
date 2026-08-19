@@ -2,7 +2,6 @@
 .env
 .env.*
 *.env
-.env.example
 
 # Local runtime configuration and personal data
 server_config.json
