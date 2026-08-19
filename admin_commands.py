@@ -2,33 +2,12 @@ import discord
 
 from config import is_builder_enabled
 from admin_logger import AdminLogger
-
-SERVER_CHANNELS = {
-    "📜・logs",
-    "🎫・open-ticket",
-    "👋・welcome",
-    "📖・rules",
-    "📢・announcements",
-    "👋・goodbye",
-    "📈・invite-tracker",
-    "💬・general-chat",
-    "🌸・introductions",
-    "🖼️・media",
-    "😂・memes",
-    "🤖・bot-commands",
-    "🎮・gaming-chat",
-    "🎮・gaming-vc",
-    "🌸・anime-chat",
-    "🌸・anime-vc",
-    "🎵・music-chat",
-    "🎧・music-lounge",
-    "🎤・karaoke-room",
-    "☕・chill-lounge",
-    "🔊・squad-room",
-    "👥・duo-room",
-    "👥・trio-room",
-    "🌙・late-night-talks",
-}
+from resource_registry import (
+    get_owned_role_ids,
+    get_owned_channel_ids,
+    get_owned_category_ids,
+    clear_registry,
+)
 
 # Roles allowed to run administrative commands
 ADMIN_ROLE_NAMES = {"👑 Founder", "⚜️ Owner", "🛡️ Admin"}
@@ -51,20 +30,73 @@ def _has_admin_permission(interaction: discord.Interaction) -> bool:
     return False
 
 
-async def safe_server_reset(guild: discord.Guild):
-    for channel in list(guild.channels):
-        if channel.name in SERVER_CHANNELS:
-            try:
-                await channel.delete(reason="Reset command")
-            except Exception:
-                pass
+async def safe_server_reset(guild: discord.Guild) -> dict:
+    """Delete ONLY resources recorded in the ownership registry for this guild.
 
-    for role in list(guild.roles):
-        if not role.is_default():
-            try:
-                await role.delete(reason="Reset command")
-            except Exception:
-                pass
+    Returns a summary dict of what was deleted.
+    """
+    guild_id = guild.id
+
+    # Build lookup maps of current guild resources by ID
+    current_roles = {role.id: role for role in guild.roles}
+    current_channels = {channel.id: channel for channel in guild.channels}
+    current_categories = {category.id: category for category in guild.categories}
+
+    # Load owned IDs from the registry
+    owned_role_ids = get_owned_role_ids(guild_id)
+    owned_channel_ids = get_owned_channel_ids(guild_id)
+    owned_category_ids = get_owned_category_ids(guild_id)
+
+    summary = {
+        "roles_deleted": 0,
+        "channels_deleted": 0,
+        "categories_deleted": 0,
+        "roles_skipped": 0,
+        "channels_skipped": 0,
+        "categories_skipped": 0,
+    }
+
+    # Delete owned categories first (channels inside them will be deleted too)
+    for category_id in owned_category_ids:
+        category = current_categories.get(category_id)
+        if category is None:
+            # Resource no longer exists in this guild — skip
+            summary["categories_skipped"] += 1
+            continue
+        try:
+            await category.delete(reason="Eldian Bot reset")
+            summary["categories_deleted"] += 1
+        except Exception:
+            summary["categories_skipped"] += 1
+
+    # Delete owned channels
+    for channel_id in owned_channel_ids:
+        channel = current_channels.get(channel_id)
+        if channel is None:
+            summary["channels_skipped"] += 1
+            continue
+        try:
+            await channel.delete(reason="Eldian Bot reset")
+            summary["channels_deleted"] += 1
+        except Exception:
+            summary["channels_skipped"] += 1
+
+    # Delete owned roles (never @everyone — it is never in the registry)
+    for role_id in owned_role_ids:
+        role = current_roles.get(role_id)
+        if role is None or role.is_default():
+            summary["roles_skipped"] += 1
+            continue
+        try:
+            await role.delete(reason="Eldian Bot reset")
+            summary["roles_deleted"] += 1
+        except Exception:
+            summary["roles_skipped"] += 1
+
+    # Clear the registry after a successful reset
+    clear_registry(guild_id)
+
+    return summary
 
 
 async def register_admin_commands(bot):
@@ -84,7 +116,7 @@ async def register_admin_commands(bot):
         embed.add_field(name="/setup", value="Creates the main server structure.", inline=False)
         embed.add_field(name="/setup-emojis", value="Uploads emojis from the emojies/ folder.", inline=False)
         embed.add_field(name="/status", value="Shows server and bot status.", inline=False)
-        embed.add_field(name="/reset", value="Removes generated roles and channels.", inline=False)
+        embed.add_field(name="/reset", value="Removes only Eldian-created roles and channels.", inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @bot.tree.command(name="setup", description="Build the Discord server structure")
@@ -186,7 +218,7 @@ async def register_admin_commands(bot):
         except Exception as e:
             await interaction.followup.send(f"❌ Emoji upload failed: {e}", ephemeral=True)
 
-    @bot.tree.command(name="reset", description="Delete generated roles and channels")
+    @bot.tree.command(name="reset", description="Delete only Eldian-created roles and channels")
     async def reset(interaction: discord.Interaction):
         if interaction.guild is None:
             await interaction.response.send_message("This command must be used inside a server.", ephemeral=True)
@@ -213,15 +245,37 @@ async def register_admin_commands(bot):
         await interaction.response.defer(thinking=True)
 
         try:
-            await safe_server_reset(guild)
-            await admin_logger.log(
-                guild,
-                "Server reset",
-                f"Server structure reset by {interaction.user}",
+            summary = await safe_server_reset(guild)
+
+            total_deleted = (
+                summary["roles_deleted"]
+                + summary["channels_deleted"]
+                + summary["categories_deleted"]
             )
-            print(f"[RESET] Guild={guild.name} ID={guild_id}")
-            print(f"[USER] {interaction.user} ID={interaction.user.id}")
-            await interaction.followup.send("✅ Server cleanup completed.")
+
+            if total_deleted == 0:
+                await interaction.followup.send(
+                    "ℹ️ No Eldian-created resources were found for this server. "
+                    "Nothing was deleted.",
+                    ephemeral=True,
+                )
+            else:
+                await admin_logger.log(
+                    guild,
+                    "Server reset",
+                    f"Deleted {summary['roles_deleted']} roles, "
+                    f"{summary['channels_deleted']} channels, "
+                    f"{summary['categories_deleted']} categories by {interaction.user}",
+                )
+                print(f"[RESET] Guild={guild.name} ID={guild_id}")
+                print(f"[USER] {interaction.user} ID={interaction.user.id}")
+                await interaction.followup.send(
+                    f"✅ Reset complete. Deleted: "
+                    f"{summary['roles_deleted']} roles, "
+                    f"{summary['channels_deleted']} channels, "
+                    f"{summary['categories_deleted']} categories. "
+                    f"Third-party and manual resources were preserved."
+                )
         except discord.Forbidden:
             await interaction.followup.send(
                 "❌ The bot does not have permission to modify this server.",

@@ -1,4 +1,5 @@
 from config import load_server_config
+from resource_registry import add_owned_role
 
 CONFIG = load_server_config()
 ROLE_GROUPS = CONFIG.get("roles", {}).get("onboarding", {})
@@ -21,11 +22,14 @@ async def create_onboarding_roles(guild):
         NOTIFICATION_ROLES
     )
 
-    existing_roles = [role.name for role in guild.roles]
+    guild_id = guild.id
+    existing_roles = {role.name: role for role in guild.roles}
 
     for role_name in roles_to_create:
         if role_name not in existing_roles:
-            await guild.create_role(name=role_name)
+            role = await guild.create_role(name=role_name)
+            add_owned_role(guild_id, role.id)
             print(f"✅ Created role: {role_name}")
         else:
-            print(f"⚠️ Role already exists: {role_name}")
+            # Ownership cannot be proven for pre-existing roles — do not register.
+            print(f"⚠️ Role already exists, skipping: {role_name}")

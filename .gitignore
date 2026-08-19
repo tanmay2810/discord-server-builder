@@ -24,6 +24,11 @@ PFP/*
 *.bak
 *.zip
 
+# Runtime server data (per-guild resource registries)
+data/registries/
+data/registries/*
+**/data/registries/
+
 # Python cache and virtualenvs
 __pycache__/
 *.py[cod]
